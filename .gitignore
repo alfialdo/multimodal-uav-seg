@@ -1,10 +1,5 @@
-/train.py
 *.pth
 /__pycache__/
 /params.yaml
-/semantic_train.py
-/test.py
-/trainer.py
-/eval.py
 *.png
 *.pyc
