@@ -3,3 +3,4 @@
 /params.yaml
 *.png
 *.pyc
+*.ipynb

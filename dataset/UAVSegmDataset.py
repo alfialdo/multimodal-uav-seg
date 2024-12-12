@@ -9,7 +9,7 @@ from glob import glob
 from PIL import Image
 import cv2
 
-class UAVSegmentation(Dataset):
+class UAVSegmDataset(Dataset):
     def __init__(self, root, num_classes, transforms=None):
         self.root = root
         self.num_classes = num_classes
@@ -66,7 +66,7 @@ class UAVSegmentation(Dataset):
         
         return image_list, mask_list
     
-class UAVSegmentation256(Dataset):
+class UAVSegmDataset256(Dataset):
     def __init__(self, root, num_classes, transforms=None):
         self.root = root
         self.num_classes = num_classes
@@ -132,7 +132,7 @@ if __name__ == '__main__':
         transforms.ToTensor()
     ])
     
-    dataset = UAVSegmentation(DATASET_PATH, NUM_CLASSES, transforms=transform)
+    dataset = UAVSegmDataset(DATASET_PATH, NUM_CLASSES, transforms=transform)
     print('Dataset size:', len(dataset))
     dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
     print('Dataloader size:', len(dataloader))

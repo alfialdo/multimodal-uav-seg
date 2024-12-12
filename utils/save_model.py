@@ -1,6 +1,6 @@
 import torch
 
-def saveModel(model, optimizer, lr_scheduler, epoch, loss, path):
+def save_model(model, optimizer, lr_scheduler, epoch, loss, path):
     """
     Save the model to the disk
 

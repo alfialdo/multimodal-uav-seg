@@ -1,109 +1,51 @@
-import os
-# import argparse
-import numpy as np
-import PIL.Image as Image
-import matplotlib.pyplot as plt
 
+from omegaconf import OmegaConf
 import torch
-from torch.utils.data import DataLoader, Dataset
-import torchvision
 from torchvision import transforms
 
-from dataset.uav_segmentation import UAVSegmentation
-from model.vanilla_unet import VanillaUNetDoubleConv as VanillaUNet
+from model.UNet import VanillaUNetDoubleConv as VanillaUNet
 from trainer import train_one_epoch
 from eval import evaluate
 from utils import EarlyStopper
-from utils import saveModel
+from utils import save_model
+from utils.common import get_loss_function, get_optimizer, get_dataloaders
 
-DATASET_PATH_TRAIN = '/mnt/hdd/dataset/uav_dataset/train/'
-DATASET_PATH_VAL = '/mnt/hdd/dataset/uav_dataset/val/'
-DATASET_PATH_TEST = '/mnt/hdd/dataset/uav_dataset/test/'
-
-BATCH_SIZE = 16
-NUM_EPOCHS = 100
-LEARNING_RATE = 0.0001
-GPU_ID = 2
-
-NUM_CLASSES = 2
-NUM_WORKER = 30
-
-SCH_FACTOR = 0.15
-SCH_PATIENCE = 15
-SCH_COOLDOWN = 5
-
-ES_PATIENCE = 30
-ES_MIN_DELTA = 0.001
-ES_MODE = "min"
+config = OmegaConf.load('config.yaml')
+dataset_cfg = config.dataset
+trainer_cfg = config.trainer
 
 BEST_TRAIN_LOSS = float('inf')
 BEST_VAL_LOSS = float('inf')
 
-SEL_CRITERION = "CrossEntropyLoss"
-SEL_OPTIMIZER = "AdamW"
-SEL_SCHEDULER = "ReduceLROnPlateau"
 
+# Get data loaders
 transform = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize(dataset_cfg.image_size),
         transforms.ToTensor()
     ])
 
-train_dataset = UAVSegmentation(DATASET_PATH_TRAIN, NUM_CLASSES, transforms=transform)
-val_dataset = UAVSegmentation(DATASET_PATH_VAL, NUM_CLASSES, transforms=transform)
-test_dataset = UAVSegmentation(DATASET_PATH_TEST, NUM_CLASSES, transforms=transform)
+train_dataloader, val_dataloader = get_dataloaders(dataset_cfg, transform)
 
-
-print('Train dataset size:', len(train_dataset))
-print('Val dataset size:', len(val_dataset))
-print('Test dataset size:', len(test_dataset))
-
-# Create dataloaders
-train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKER)
-val_dataloader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKER)
-test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKER)
-
-# Iterate over the train dataloader
-for images, masks in train_dataloader:
-    print('Train batch size:', images.size())
-    break
-
-# Iterate over the val dataloader
-for images, masks in val_dataloader:
-    print('Val batch size:', images.size())
-    break
-
-for idx, (image, mask) in enumerate(train_dataset):
-    print('Image shape:', image.shape)
-    print('Mask shape:', mask.shape)
-    break
 
 # Define the model
-model = VanillaUNet(in_channels=3, out_channels=NUM_CLASSES)
+model = VanillaUNet(in_channels=1, out_channels=dataset_cfg.num_classes)
+criterion = get_loss_function(trainer_cfg.loss_fn)
+optimizer = get_optimizer(trainer_cfg.optimizer, model, trainer_cfg.lr)
 
-if SEL_CRITERION == 'CrossEntropyLoss':
-    criterion = torch.nn.CrossEntropyLoss()
-elif SEL_CRITERION == 'BCEWithLogitsLoss':
-    criterion = torch.nn.BCEWithLogitsLoss()
+if trainer_cfg.scheduler.type == 'ReduceLROnPlateau':
+    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=trainer_cfg.scheduler.factor, patience=trainer_cfg.scheduler.patience, cooldown=trainer_cfg.scheduler.cooldown)
 
-if SEL_OPTIMIZER == 'Adam':
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
-elif SEL_OPTIMIZER == 'AdamW':
-    optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
-elif SEL_OPTIMIZER == 'SGD':
-    optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE)
-
-if SEL_SCHEDULER == 'ReduceLROnPlateau':
-    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=SCH_FACTOR, patience=SCH_PATIENCE, cooldown=SCH_COOLDOWN)
-
-device = torch.device(f'cuda:{GPU_ID}' if torch.cuda.is_available() else 'cpu')
-early_stopper = EarlyStopper(patience = int(ES_PATIENCE), 
-                            min_delta = float(ES_MIN_DELTA))
+device = torch.device(f'cuda:{trainer_cfg.gpu_id}' if torch.cuda.is_available() else 'cpu')
+early_stopper = EarlyStopper(
+    patience = int(trainer_cfg.early_stop.patience), 
+    min_delta = float(trainer_cfg.early_stop.min_delta)
+)
 
 model.to(device)
 
 # Training
-for epoch in range(NUM_EPOCHS):
-    print(f'Epoch {epoch + 1}/{NUM_EPOCHS}')
+for epoch in range(trainer_cfg.epochs):
+    print(f'Epoch {epoch + 1}/{trainer_cfg.epochs}')
     train_loss, train_dice_loss, train_dice_metrics = train_one_epoch(model, train_dataloader, criterion, optimizer, device)
     print(f'Train Loss: {train_loss} | Dice loss: {train_dice_loss} | Dice metrics: {train_dice_metrics}')
     val_loss, val_dice_loss, val_dice_metrics = evaluate(model, val_dataloader, criterion, device)
@@ -113,9 +55,9 @@ for epoch in range(NUM_EPOCHS):
 
     # Save the model
     if train_loss < BEST_TRAIN_LOSS:
-        saveModel(model, optimizer, lr_scheduler, epoch, train_loss, 'checkpoints/best_train_uav_dconv.pth')
+        save_model(model, optimizer, lr_scheduler, epoch, train_loss, config.trainer.checkpoint.train_path)
     if val_loss < BEST_VAL_LOSS:
-        saveModel(model, optimizer, lr_scheduler, epoch, val_loss, 'checkpoints/best_val_uav_dconv.pth')
+        save_model(model, optimizer, lr_scheduler, epoch, val_loss, config.trainer.checkpoint.val_path)
 
     if early_stopper.early_stop(val_loss):
         print('Early stopping')
