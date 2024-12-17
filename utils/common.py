@@ -2,6 +2,7 @@ import torch
 from dataset import UAVSegmDataset
 from torch.utils.data import DataLoader
 import numpy as np
+import os
 
 def get_loss_function(loss_fn):
     if loss_fn == 'CrossEntropyLoss':
@@ -23,18 +24,32 @@ def get_optimizer(optimizer, model, lr):
 
 def get_dataloaders(config, tsfm, test=False):
     if test:
-        test_dataset = UAVSegmDataset(config.test_path, config.num_classes, transforms=tsfm)
+        test_dataset = UAVSegmDataset(
+            os.path.join(config.root, 'test'),
+            os.path.join(config.root_mask, 'test'),
+            transforms=tsfm,
+            num_sequences=config.test_sequences
+        )
         print('Test dataset size:', len(test_dataset))
 
         test_dataloader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False, num_workers=config.num_workers)
 
         return test_dataloader
 
-    train_dataset = UAVSegmDataset(config.train_path, config.num_classes, transforms=tsfm)
-    val_dataset = UAVSegmDataset(config.val_path, config.num_classes, transforms=tsfm)
-
-
+    train_dataset = UAVSegmDataset(
+        os.path.join(config.root, 'train'),
+        os.path.join(config.root_mask, 'train'),
+        transforms=tsfm,
+        num_sequences=config.train_sequences
+    )
     print('Train dataset size:', len(train_dataset))
+
+    val_dataset = UAVSegmDataset(
+        os.path.join(config.root, 'val'),
+        os.path.join(config.root_mask, 'val'),
+        transforms=tsfm,
+        num_sequences=config.val_sequences
+    )
     print('Val dataset size:', len(val_dataset))
 
     # Create dataloaders
@@ -51,20 +66,19 @@ def get_dataloaders(config, tsfm, test=False):
         print('Val batch size:', images.size())
         break
 
-    for idx, (image, mask) in enumerate(train_dataset):
-        print('Image shape:', image.shape)
-        print('Mask shape:', mask.shape)
-        break
+    # for idx, (image, mask) in enumerate(train_dataset):
+    #     print('Image shape:', image.shape)
+    #     print('Mask shape:', mask.shape)
+    #     break
 
     return train_dataloader, val_dataloader
 
 
 def compute_confusion_matrix(pred, target, num_classes):
-    # print(pred.shape, target.shape)
     pred = pred.flatten()
     target = target.flatten()
     mask = (target >= 0) & (target < num_classes)
-    # print(pred.shape, mask.shape, target.shape)
+
     return np.bincount(
         num_classes * target[mask].astype(int) + pred[mask].astype(int),
         minlength=num_classes**2,
