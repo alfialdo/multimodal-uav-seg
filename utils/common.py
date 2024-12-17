@@ -75,11 +75,10 @@ def get_dataloaders(config, tsfm, test=False):
 
 
 def compute_confusion_matrix(pred, target, num_classes):
-    # print(pred.shape, target.shape)
     pred = pred.flatten()
     target = target.flatten()
     mask = (target >= 0) & (target < num_classes)
-    # print(pred.shape, mask.shape, target.shape)
+
     return np.bincount(
         num_classes * target[mask].astype(int) + pred[mask].astype(int),
         minlength=num_classes**2,

@@ -90,7 +90,6 @@ def test():
             break
             
     pixel_accuracy, mean_pixel_accuracy, iou, mean_iou = calculate_metrics(confusion_matrix)
-    # TODO: add pixel accuracy to validation step
     print(f"Pixel Accuracy: {pixel_accuracy:.4f}")
     print(f"Mean Pixel Accuracy: {mean_pixel_accuracy:.4f}")
     print(f"Mean IoU: {mean_iou:.4f}")
