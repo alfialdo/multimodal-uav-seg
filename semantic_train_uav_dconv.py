@@ -3,7 +3,7 @@ from omegaconf import OmegaConf
 import torch
 from torchvision import transforms
 
-from model.UNet import VanillaUNetDoubleConv as VanillaUNet
+from model.UNet import VanillaUNetDoubleConv
 from trainer import train_one_epoch
 from eval import evaluate
 from utils import EarlyStopper
@@ -17,7 +17,6 @@ trainer_cfg = config.trainer
 BEST_TRAIN_LOSS = float('inf')
 BEST_VAL_LOSS = float('inf')
 
-
 # Get data loaders
 transform = transforms.Compose([
         transforms.Resize(dataset_cfg.image_size),
@@ -28,7 +27,7 @@ train_dataloader, val_dataloader = get_dataloaders(dataset_cfg, transform)
 
 
 # Define the model
-model = VanillaUNet(in_channels=1, out_channels=dataset_cfg.num_classes)
+model = VanillaUNetDoubleConv(in_channels=3, out_channels=1)
 criterion = get_loss_function(trainer_cfg.loss_fn)
 optimizer = get_optimizer(trainer_cfg.optimizer, model, trainer_cfg.lr)
 
@@ -46,18 +45,23 @@ model.to(device)
 # Training
 for epoch in range(trainer_cfg.epochs):
     print(f'Epoch {epoch + 1}/{trainer_cfg.epochs}')
-    train_loss, train_dice_loss, train_dice_metrics = train_one_epoch(model, train_dataloader, criterion, optimizer, device)
-    print(f'Train Loss: {train_loss} | Dice loss: {train_dice_loss} | Dice metrics: {train_dice_metrics}')
-    val_loss, val_dice_loss, val_dice_metrics = evaluate(model, val_dataloader, criterion, device)
-    print(f'Val Loss: {val_loss} | Dice loss: {val_dice_loss} | Dice metrics: {val_dice_metrics}')
+    
+    train_loss = train_one_epoch(model, train_dataloader, criterion, optimizer, device)
+    print(f'Train Loss: {train_loss}')
+    
+    val_loss = evaluate(model, val_dataloader, criterion, device)
+    print(f'Val Loss: {val_loss}')
     
     lr_scheduler.step(val_loss)
 
     # Save the model
     if train_loss < BEST_TRAIN_LOSS:
         save_model(model, optimizer, lr_scheduler, epoch, train_loss, config.trainer.checkpoint.train_path)
+        BEST_TRAIN_LOSS = train_loss
+    
     if val_loss < BEST_VAL_LOSS:
         save_model(model, optimizer, lr_scheduler, epoch, val_loss, config.trainer.checkpoint.val_path)
+        BEST_VAL_LOSS = val_loss
 
     if early_stopper.early_stop(val_loss):
         print('Early stopping')

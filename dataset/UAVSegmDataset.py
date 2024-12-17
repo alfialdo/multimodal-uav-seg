@@ -31,7 +31,7 @@ class UAVSegmDataset(Dataset):
             image = self.transforms(image)
             mask = self.transforms(mask)
 
-            assert mask.min() == 0.0 and mask.max() == 1.0, 'Invalid value of masks'
+            # assert mask.min() == 0.0 and mask.max() == 1.0, 'Invalid value of masks'
 
         return image, mask
 

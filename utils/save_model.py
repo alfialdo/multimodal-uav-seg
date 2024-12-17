@@ -1,4 +1,5 @@
 import torch
+import os
 
 def save_model(model, optimizer, lr_scheduler, epoch, loss, path):
     """
@@ -14,6 +15,9 @@ def save_model(model, optimizer, lr_scheduler, epoch, loss, path):
     Returns:    
     - None
     """
+
+    if (not os.path.exists("checkpoints")):
+        os.mkdir("checkpoints")
 
     torch.save({
         'epoch': epoch,
