@@ -28,6 +28,9 @@ trainer:
     train_path: checkpoints/best-train.pth
     test_path: checkpoints/best-test.pth
 
+model:
+  name: VanillaUNet
+
 
 
 
