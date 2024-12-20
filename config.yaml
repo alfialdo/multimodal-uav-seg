@@ -1,16 +1,15 @@
 dataset:
   root: /mnt/hdd/uav_dataset/Anti-UAV-RGBT
   root_mask: /mnt/hdd/uav_dataset/Anti-UAV-RGBT-Masked-SAM2
-  num_classes: 2 # TODO: remove this variable
-  num_workers: 16
-  batch_size: 16
-  image_size: [224,224]
+  num_workers: 32
+  batch_size: 32
+  image_size: [480,480]
   train_sequences: 4
   val_sequences: 1
   test_sequences: 1
 
 trainer:
-  epochs: 10
+  epochs: 50
   optimizer: AdamW
   loss_fn: BCEWithLogitsLoss
   lr: 0.0001
@@ -21,7 +20,7 @@ trainer:
     patience: 15
     cooldown: 5
   early_stop:
-    patience: 30
+    patience: 5
     min_delta: 0.001
     mode: min
   checkpoint: 

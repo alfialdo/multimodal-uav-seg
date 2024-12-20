@@ -74,26 +74,24 @@ def get_dataloaders(config, tsfm, test=False):
     return train_dataloader, val_dataloader
 
 
-def compute_confusion_matrix(pred, target, num_classes):
-    pred = pred.flatten()
-    target = target.flatten()
-    mask = (target >= 0) & (target < num_classes)
-
-    return np.bincount(
-        num_classes * target[mask].astype(int) + pred[mask].astype(int),
-        minlength=num_classes**2,
-    ).reshape(num_classes, num_classes)
+def pixel_accuracy(pred_mask, true_mask):
+    correct = (pred_mask == true_mask).sum().item()
+    total = true_mask.numel()
+    return correct / total
 
 
-def calculate_metrics(confusion_matrix):
-    tp = np.diag(confusion_matrix)
-    sum_rows = confusion_matrix.sum(axis=1)
-    sum_cols = confusion_matrix.sum(axis=0)
-    total_pixels = confusion_matrix.sum()
+def seg_miou(pred_mask, true_mask):
+    pred_mask = pred_mask.bool()
+    true_mask = true_mask.bool()
+    intersection = (pred_mask & true_mask).float().sum((1, 2, 3))
+    union = (pred_mask | true_mask).float().sum((1, 2, 3))
+    iou = (intersection + 1e-6) / (union + 1e-6)
+    return iou.mean().item()
 
-    pixel_accuracy = tp.sum() / total_pixels
-    mean_pixel_accuracy = np.mean(tp / np.maximum(sum_rows, 1))
-    iou = tp / np.maximum(sum_rows + sum_cols - tp, 1)
-    mean_iou = np.mean(iou)
 
-    return pixel_accuracy, mean_pixel_accuracy, iou, mean_iou
+def dice_coeff(pred_mask, true_mask):
+    pred_mask = pred_mask.bool()
+    true_mask = true_mask.bool()
+    intersection = (pred_mask & true_mask).float().sum((1, 2, 3))
+    dice = (2. * intersection + 1e-6) / (pred_mask.float().sum((1, 2, 3)) + true_mask.float().sum((1, 2, 3)) + 1e-6)
+    return dice.mean().item()
