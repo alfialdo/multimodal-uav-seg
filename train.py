@@ -3,7 +3,6 @@ from omegaconf import OmegaConf
 import torch
 from torchvision import transforms
 
-from model.DyUNet import DyUNet
 from trainer import train_one_epoch
 from eval import evaluate
 from utils import EarlyStopper
@@ -27,7 +26,13 @@ train_dataloader, val_dataloader = get_dataloaders(dataset_cfg, transform)
 
 
 # Define the model
-model = DyUNet(in_channels=3, start_out_channels=32, num_class=1, size=4, padding=1)
+if config.model.name == 'VanillaUNet':
+    from model.UNet import VanillaUNet
+    model = VanillaUNet(in_channels=3, start_out_channels=32, num_class=1, size=4, padding=1)
+elif config.model.name == 'DyUNet':
+    from model.DyUNet import DyUNet
+    model = DyUNet(in_channels=3, start_out_channels=32, num_class=1, size=4, padding=1)
+
 criterion = get_loss_function(trainer_cfg.loss_fn)
 optimizer = get_optimizer(trainer_cfg.optimizer, model, trainer_cfg.lr)
 
@@ -60,6 +65,7 @@ for epoch in range(trainer_cfg.epochs):
         BEST_TRAIN_LOSS = train_loss
     
     if val_loss < BEST_VAL_LOSS:
+        print('Saving validation best model: ', val_loss)
         save_model(model, optimizer, lr_scheduler, epoch, val_loss, config.trainer.checkpoint.val_path)
         BEST_VAL_LOSS = val_loss
 

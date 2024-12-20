@@ -24,6 +24,9 @@ test_loader = get_dataloaders(config.dataset, tsfm, test=True)
 if config.model.name == 'VanillaUNet':
     from model.UNet import VanillaUNet
     model = VanillaUNet(in_channels=3, start_out_channels=32, num_class=1, size=4, padding=1)
+elif config.model.name == 'DyUNet':
+    from model.DyUNet import DyUNet
+    model = DyUNet(in_channels=3, start_out_channels=32, num_class=1, size=4, padding=1)
 
 model_path = args.model_path
 model.load_state_dict(torch.load(
@@ -41,7 +44,7 @@ if __name__ == '__main__':
     total_batches = len(test_loader)
     
     with torch.no_grad():
-        for images, true_masks in tqdm(test_loader, desc='Model Evaluation'):
+        for images, true_masks in tqdm(test_loader, desc='Model Testing'):
             images = images.to(device)
             true_masks = true_masks.to(device)            
             outputs = model(images)

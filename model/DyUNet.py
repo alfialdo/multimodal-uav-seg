@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 from torchvision.transforms.functional import center_crop
 from torchinfo import summary
+import torch.nn.functional as F
+import einops
 
 class CNNBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0):
@@ -32,7 +34,60 @@ class MultiCNNBlock(nn.Module):
             x = layer(x)
 
         return x
+
+class DyConvBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, num_dy_conv=4, attn_temp=20):
+        super().__init__()
+        self.num_dy_conv = num_dy_conv
+        self.stride = stride
+        self.padding = padding
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
+        self.attn_temp = attn_temp
+
+        # Attention for 2d input
+        if in_channels == 3:
+            hidden_channels = num_dy_conv
+        else:
+            hidden_channels = int(in_channels * 0.25) + 1
+
+        self.attention = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(in_channels, hidden_channels, kernel_size=1, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(hidden_channels, num_dy_conv, kernel_size=1, bias=True)
+        )
+
+        # Dynamic convolution for 2d input  
+        self.weights = nn.Parameter(torch.randn(num_dy_conv, out_channels, in_channels, kernel_size, kernel_size), requires_grad=True)
+        self.bn = nn.BatchNorm2d(num_features=out_channels, affine=True)
+        self.silu = nn.SiLU(inplace=True)
+
     
+    def forward(self, x):
+        
+        x_shape = einops.parse_shape(x, 'b c h w')
+        batch_size, in_channels = x_shape['b'], x_shape['c']
+
+        # Calculate attention scores
+        attn_scores = self.attention(x)
+        attn_scores = attn_scores.view(batch_size, -1)
+        attn_scores = F.softmax(attn_scores / self.attn_temp, 1)
+
+        # Aggregate weights
+        weights = self.weights.view(self.num_dy_conv, -1)
+        filters = torch.mm(attn_scores, weights)
+        filters = einops.rearrange(
+            filters, 'b (out_c in_c kh kw) -> (b out_c) in_c kh kw', 
+            out_c=self.out_channels, in_c=in_channels, kh=self.kernel_size, kw=self.kernel_size
+        )
+
+        x = einops.rearrange(x, 'b c h w -> 1 (b c) h w')
+        x = F.conv2d(x, filters, stride=self.stride, padding=self.padding, bias=None, groups=batch_size)
+        x = einops.rearrange(x, '1 (b c) h w -> b c h w', b=batch_size)
+        x = self.silu(self.bn(x))
+
+        return x
 
 class Encoder(nn.Module):
     def __init__(self, in_channels, out_channels, padding, size=4):
@@ -40,18 +95,18 @@ class Encoder(nn.Module):
         self.encoder_layers = nn.ModuleList()
 
         for _ in range(size):
-            self.encoder_layers.append(MultiCNNBlock(in_channels, out_channels, padding, n_conv=2))
+            self.encoder_layers.append(DyConvBlock(in_channels, out_channels, padding=padding, num_dy_conv=2))
             self.encoder_layers.append(nn.MaxPool2d(2,2))
             in_channels = out_channels
             out_channels *= 2
 
-        self.encoder_layers.append(MultiCNNBlock(in_channels, out_channels, padding, n_conv=2))
+        self.encoder_layers.append(DyConvBlock(in_channels, out_channels, padding=padding, num_dy_conv=2))
 
     def forward(self, x):
         route_connection = []
 
         for layer in self.encoder_layers:
-            if isinstance(layer, MultiCNNBlock):
+            if isinstance(layer, DyConvBlock) or isinstance(layer, MultiCNNBlock):
                 x = layer(x)
                 route_connection.append(x)
                 # print('Conv', x.size())
@@ -71,7 +126,7 @@ class Decoder(nn.Module):
         for _ in range(size):
             # Use conv transpose for upsampling
             self.decoder_layers.append(nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2))
-            self.decoder_layers.append(MultiCNNBlock(in_channels, out_channels, padding, n_conv=2))
+            self.decoder_layers.append(DyConvBlock(in_channels, out_channels, padding=padding, num_dy_conv=2))
             in_channels //= 2
             out_channels //= 2
 
@@ -82,7 +137,7 @@ class Decoder(nn.Module):
     def forward(self, x, routes_connection):
         routes_connection.pop(-1)
         for layer in self.decoder_layers:
-            if isinstance(layer, MultiCNNBlock):
+            if isinstance(layer, MultiCNNBlock) or isinstance(layer, DyConvBlock):
                 # match spatial size by using center crop
                 if self.padding == 0:
                     routes_connection[-1] = center_crop(routes_connection[-1], x.shape[-1])
@@ -122,5 +177,6 @@ if __name__ == '__main__':
         size=4,
         padding=1,
     )
+    
     print(summary(model, input_data=x, col_width=20, depth=5, row_settings=["depth", "var_names"], col_names=["input_size", "kernel_size", "output_size", "params_percent"]))
 

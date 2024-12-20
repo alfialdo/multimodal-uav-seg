@@ -3,10 +3,10 @@ dataset:
   root_mask: /mnt/hdd/uav_dataset/Anti-UAV-RGBT-Masked-SAM2
   num_workers: 32
   batch_size: 32
-  image_size: [480,480]
-  train_sequences: 4
-  val_sequences: 1
-  test_sequences: 1
+  image_size: [240,240]
+  train_sequences: 100
+  val_sequences: 20
+  test_sequences: 20
 
 trainer:
   epochs: 50
@@ -17,7 +17,7 @@ trainer:
   scheduler:
     type: ReduceLROnPlateau
     factor: 0.15
-    patience: 15
+    patience: 10
     cooldown: 5
   early_stop:
     patience: 5
@@ -29,7 +29,7 @@ trainer:
     test_path: checkpoints/best-test.pth
 
 model:
-  name: VanillaUNet
+  name: DyUNet
 
 
 
