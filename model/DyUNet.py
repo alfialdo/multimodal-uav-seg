@@ -36,7 +36,7 @@ class MultiCNNBlock(nn.Module):
         return x
 
 class DyConvBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, num_dy_conv=4, attn_temp=20):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, num_dy_conv=4, attn_temp=30):
         super().__init__()
         self.num_dy_conv = num_dy_conv
         self.stride = stride
@@ -126,7 +126,7 @@ class Decoder(nn.Module):
         for _ in range(size):
             # Use conv transpose for upsampling
             self.decoder_layers.append(nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2))
-            self.decoder_layers.append(DyConvBlock(in_channels, out_channels, padding=padding, num_dy_conv=2))
+            self.decoder_layers.append(MultiCNNBlock(in_channels, out_channels, padding, n_conv=2))
             in_channels //= 2
             out_channels //= 2
 

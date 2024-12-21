@@ -4,14 +4,14 @@ dataset:
   num_workers: 32
   batch_size: 32
   image_size: [240,240]
-  train_sequences: 100
+  train_sequences: 70
   val_sequences: 20
   test_sequences: 20
 
 trainer:
   epochs: 50
   optimizer: AdamW
-  loss_fn: BCEWithLogitsLoss
+  loss_fn: DiceLoss
   lr: 0.0001
   gpu_id: 1
   scheduler:
@@ -20,13 +20,12 @@ trainer:
     patience: 10
     cooldown: 5
   early_stop:
-    patience: 5
+    patience: 10
     min_delta: 0.001
     mode: min
   checkpoint: 
-    val_path: checkpoints/best-val.pth
-    train_path: checkpoints/best-train.pth
-    test_path: checkpoints/best-test.pth
+    val_path: best-val.pth
+    train_path: best-train.pth
 
 model:
   name: DyUNet

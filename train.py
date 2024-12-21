@@ -61,12 +61,18 @@ for epoch in range(trainer_cfg.epochs):
 
     # Save the model
     if train_loss < BEST_TRAIN_LOSS:
-        save_model(model, optimizer, lr_scheduler, epoch, train_loss, config.trainer.checkpoint.train_path)
+        save_model(
+            model, optimizer, lr_scheduler, epoch, train_loss,
+            f'checkpoints/{config.model.name}-{config.trainer.checkpoint.train_path}'
+        )
         BEST_TRAIN_LOSS = train_loss
     
     if val_loss < BEST_VAL_LOSS:
         print('Saving validation best model: ', val_loss)
-        save_model(model, optimizer, lr_scheduler, epoch, val_loss, config.trainer.checkpoint.val_path)
+        save_model(
+            model, optimizer, lr_scheduler, epoch, val_loss, 
+            f'checkpoints/{config.model.name}-{config.trainer.checkpoint.val_path}'
+        )
         BEST_VAL_LOSS = val_loss
 
     if early_stopper.early_stop(val_loss):

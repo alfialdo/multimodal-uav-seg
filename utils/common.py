@@ -3,12 +3,15 @@ from dataset import UAVSegmDataset
 from torch.utils.data import DataLoader
 import numpy as np
 import os
+import segmentation_models_pytorch as smp
 
 def get_loss_function(loss_fn):
     if loss_fn == 'CrossEntropyLoss':
         return torch.nn.CrossEntropyLoss()
     elif loss_fn == 'BCEWithLogitsLoss':
         return torch.nn.BCEWithLogitsLoss()
+    elif loss_fn == 'DiceLoss':
+        return smp.losses.DiceLoss(mode='binary')
     else:
         raise ValueError(f'Loss function {loss_fn} not supported')
     
@@ -18,6 +21,8 @@ def get_optimizer(optimizer, model, lr):
         return torch.optim.Adam(model.parameters(), lr=lr)
     elif optimizer == 'AdamW':
         return torch.optim.AdamW(model.parameters(), lr=lr)
+    elif optimizer == 'SGD':
+        return torch.optim.SGD(model.parameters(), lr=lr, momentum=0.8)
     else:
         raise ValueError(f'Optimizer {optimizer} not supported')
                          
