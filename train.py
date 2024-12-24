@@ -12,6 +12,7 @@ from utils.common import get_loss_function, get_optimizer, get_dataloaders
 config = OmegaConf.load('config.yaml')
 dataset_cfg = config.dataset
 trainer_cfg = config.trainer
+ckpt_dir = config.trainer.checkpoint.save_dir
 
 BEST_TRAIN_LOSS = float('inf')
 BEST_VAL_LOSS = float('inf')
@@ -48,33 +49,36 @@ early_stopper = EarlyStopper(
 model.to(device)
 
 # Training
-for epoch in range(trainer_cfg.epochs):
-    print(f'Epoch {epoch + 1}/{trainer_cfg.epochs}')
-    
-    train_loss = train_one_epoch(model, train_dataloader, criterion, optimizer, device)
-    print(f'Train Loss: {train_loss}')
-    
-    val_loss = evaluate(model, val_dataloader, criterion, device)
-    print(f'Val Loss: {val_loss}')
-    
-    lr_scheduler.step(val_loss)
+if __name__ == '__main__':
+    print(f'Running experiment: {ckpt_dir.split("/")[-1]}')
 
-    # Save the model
-    if train_loss < BEST_TRAIN_LOSS:
-        save_model(
-            model, optimizer, lr_scheduler, epoch, train_loss,
-            f'checkpoints/{config.model.name}-{config.trainer.checkpoint.train_path}'
-        )
-        BEST_TRAIN_LOSS = train_loss
-    
-    if val_loss < BEST_VAL_LOSS:
-        print('Saving validation best model: ', val_loss)
-        save_model(
-            model, optimizer, lr_scheduler, epoch, val_loss, 
-            f'checkpoints/{config.model.name}-{config.trainer.checkpoint.val_path}'
-        )
-        BEST_VAL_LOSS = val_loss
+    for epoch in range(trainer_cfg.epochs):
+        print(f'Epoch {epoch + 1}/{trainer_cfg.epochs}')
+        
+        train_loss = train_one_epoch(model, train_dataloader, criterion, optimizer, device)
+        print(f'Train Loss: {train_loss}')
+        
+        val_loss = evaluate(model, val_dataloader, criterion, device)
+        print(f'Val Loss: {val_loss}')
+        
+        lr_scheduler.step(val_loss)
 
-    if early_stopper.early_stop(val_loss):
-        print('Early stopping')
-        break
+        # Save the model
+        if train_loss < BEST_TRAIN_LOSS:
+            save_model(
+                model, optimizer, lr_scheduler, epoch, train_loss,
+                f'{ckpt_dir}/{config.model.name}-best-train.pth'
+            )
+            BEST_TRAIN_LOSS = train_loss
+        
+        if val_loss < BEST_VAL_LOSS:
+            print('Saving validation best model: ', val_loss)
+            save_model(
+                model, optimizer, lr_scheduler, epoch, val_loss, 
+                f'{ckpt_dir}/{config.model.name}-best-val.pth'
+            )
+            BEST_VAL_LOSS = val_loss
+
+        if early_stopper.early_stop(val_loss):
+            print('Early stopping')
+            break

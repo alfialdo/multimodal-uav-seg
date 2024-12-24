@@ -15,9 +15,10 @@ def save_model(model, optimizer, lr_scheduler, epoch, loss, path):
     Returns:    
     - None
     """
+    base_dir = os.path.dirname(path)
 
-    if (not os.path.exists("checkpoints")):
-        os.mkdir("checkpoints")
+    if (not os.path.exists(base_dir)):
+        os.makedirs(base_dir)
 
     torch.save({
         'epoch': epoch,
