@@ -10,7 +10,7 @@ dataset:
 
 trainer:
   epochs: 50
-  optimizer: AdamW
+  optimizer: SGD
   loss_fn: DiceLoss
   lr: 0.0001
   gpu_id: 1
@@ -24,8 +24,7 @@ trainer:
     min_delta: 0.001
     mode: min
   checkpoint: 
-    val_path: best-val.pth
-    train_path: best-train.pth
+    save_dir: checkpoints/DyUNet-SGD-DiceLoss
 
 model:
   name: DyUNet
