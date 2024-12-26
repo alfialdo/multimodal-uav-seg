@@ -10,8 +10,8 @@ dataset:
 
 trainer:
   epochs: 50
-  optimizer: SGD
-  loss_fn: DiceLoss
+  optimizer: AdamW
+  loss_fn: IoULoss
   lr: 0.0001
   gpu_id: 1
   scheduler:
@@ -24,10 +24,10 @@ trainer:
     min_delta: 0.001
     mode: min
   checkpoint: 
-    save_dir: checkpoints/DyUNet-SGD-DiceLoss
+    save_dir: checkpoints/VanillaUNet-AdamW-IoULoss
 
 model:
-  name: DyUNet
+  name: VanillaUNet
 
 
 

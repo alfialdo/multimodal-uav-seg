@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 import numpy as np
 import os
 import segmentation_models_pytorch as smp
+from omegaconf import OmegaConf
 
 def get_loss_function(loss_fn):
     if loss_fn == 'CrossEntropyLoss':
@@ -80,6 +81,15 @@ def get_dataloaders(config, tsfm, test=False):
 
     return train_dataloader, val_dataloader
 
+# TODO: create write config function
+def write_config(ckpt_dir, config):
+    if not os.path.exists(ckpt_dir):
+        os.makedirs(ckpt_dir)
+
+    with open(os.path.join(ckpt_dir, 'config.yaml'), 'w') as f:
+        OmegaConf.save(config, f)
+
+    print('Write config.yaml file to:', ckpt_dir)
 
 def pixel_accuracy(pred_mask, true_mask):
     correct = (pred_mask == true_mask).sum().item()

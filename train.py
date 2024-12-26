@@ -2,12 +2,13 @@
 from omegaconf import OmegaConf
 import torch
 from torchvision import transforms
+import os
 
 from trainer import train_one_epoch
 from eval import evaluate
 from utils import EarlyStopper
 from utils import save_model
-from utils.common import get_loss_function, get_optimizer, get_dataloaders
+from utils.common import get_loss_function, get_optimizer, get_dataloaders, write_config
 
 config = OmegaConf.load('config.yaml')
 dataset_cfg = config.dataset
@@ -50,7 +51,10 @@ model.to(device)
 
 # Training
 if __name__ == '__main__':
-    print(f'Running experiment: {ckpt_dir.split("/")[-1]}')
+    # write model configuration
+    print(f'Running experiment: {ckpt_dir}')
+    write_config(ckpt_dir, config)
+    
 
     for epoch in range(trainer_cfg.epochs):
         print(f'Epoch {epoch + 1}/{trainer_cfg.epochs}')
