@@ -98,7 +98,7 @@ class Encoder(nn.Module):
             self.encoder_layers.append(DyConvBlock(in_channels, out_channels, padding=padding, num_dy_conv=2))
             self.encoder_layers.append(nn.MaxPool2d(2,2))
             in_channels = out_channels
-            out_channels *= 2
+            # out_channels *= 2
 
         self.encoder_layers.append(DyConvBlock(in_channels, out_channels, padding=padding, num_dy_conv=2))
 
@@ -109,10 +109,10 @@ class Encoder(nn.Module):
             if isinstance(layer, DyConvBlock) or isinstance(layer, MultiCNNBlock):
                 x = layer(x)
                 route_connection.append(x)
-                # print('Conv', x.size())
+                print('Conv', x.size())
             else:
                 x = layer(x)
-                # print('Down sample', x.size())
+                print('Down sample', x.size())
 
         return x, route_connection
     
@@ -127,8 +127,8 @@ class Decoder(nn.Module):
             # Use conv transpose for upsampling
             self.decoder_layers.append(nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2))
             self.decoder_layers.append(MultiCNNBlock(in_channels, out_channels, padding, n_conv=2))
-            in_channels //= 2
-            out_channels //= 2
+            # in_channels //= 2
+            # out_channels //= 2
 
         # Use normal conv to remove bn and activation function
         self.decoder_layers.append(nn.Conv2d(in_channels, num_class, kernel_size=1))
@@ -145,20 +145,20 @@ class Decoder(nn.Module):
                 # concat channels
                 x = torch.cat([x, routes_connection.pop(-1)], dim=1)
                 x = layer(x)
-                # print('Dec Conv', x.size())
+                print('Dec Conv', x.size())
             else:
                 x = layer(x)
-                # print('Up sample', x.size())
+                print('Up sample', x.size())
 
         return x
     
 
-class DyUNet(nn.Module):
+class ThinDyUNet(nn.Module):
     def __init__(self,in_channels, start_out_channels, num_class, size, padding=0):
         super().__init__()
         self.encoder = Encoder(in_channels, start_out_channels, padding=padding, size=size)
         self.decoder = Decoder(
-            start_out_channels*(2**size), start_out_channels*(2**(size-1)),
+            start_out_channels, start_out_channels,
             num_class, padding=padding, size=size
         )
 
@@ -169,12 +169,12 @@ class DyUNet(nn.Module):
 
 
 if __name__ == '__main__':
-    x = torch.randn(1, 3, 240, 240)
-    model = DyUNet(
+    x = torch.randn(1, 3, 244, 244)
+    model = ThinDyUNet(
         in_channels=3,
         start_out_channels=32,
         num_class=1,
-        size=4,
+        size=6,
         padding=1,
     )
     

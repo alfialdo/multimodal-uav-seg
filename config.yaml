@@ -3,7 +3,7 @@ dataset:
   root_mask: /mnt/hdd/uav_dataset/Anti-UAV-RGBT-Masked-SAM2
   num_workers: 32
   batch_size: 32
-  image_size: [240,240]
+  image_size: [480,480]
   train_sequences: 70
   val_sequences: 20
   test_sequences: 20
@@ -24,11 +24,7 @@ trainer:
     min_delta: 0.001
     mode: min
   checkpoint: 
-    save_dir: checkpoints/VanillaUNet-AdamW-IoULoss
+    save_dir: checkpoints/DyUNet-AdamW-IoULoss-480
 
 model:
-  name: VanillaUNet
-
-
-
-
+  name: DyUNet

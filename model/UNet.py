@@ -114,13 +114,13 @@ class VanillaUNet(nn.Module):
 
 
 if __name__ == '__main__':
-    x = torch.randn(1, 3, 480, 480)
+    x = torch.randn(1, 3, 240, 240)
     model = VanillaUNet(
         in_channels=3,
-        start_out_channels=32,
+        start_out_channels=64,
         num_class=1,
         size=4,
         padding=1,
     )
 
-    print(summary(model, input_data=x, col_width=20, depth=5, row_settings=["depth", "var_names"], col_names=["input_size", "kernel_size", "output_size", "params_percent"]))
+    summary(model, input_data=x, col_width=20, depth=5, row_settings=["depth", "var_names"], col_names=["input_size", "kernel_size", "output_size", "params_percent"])
