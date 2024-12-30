@@ -34,6 +34,9 @@ if config.model.name == 'VanillaUNet':
 elif config.model.name == 'DyUNet':
     from model.DyUNet import DyUNet
     model = DyUNet(in_channels=3, start_out_channels=32, num_class=1, size=4, padding=1)
+elif config.model.name == 'ThinDyUNet':
+    from model.ThinDyUNet import ThinDyUNet
+    model = ThinDyUNet(in_channels=3, start_out_channels=64, num_class=1, size=6, padding=1)
 
 criterion = get_loss_function(trainer_cfg.loss_fn)
 optimizer = get_optimizer(trainer_cfg.optimizer, model, trainer_cfg.lr)

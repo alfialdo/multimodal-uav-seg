@@ -5,37 +5,7 @@ from torchinfo import summary
 import torch.nn.functional as F
 import einops
 
-class CNNBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0):
-        super(CNNBlock, self).__init__()
-
-        self.cnn_block = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=False),
-            # nn.GroupNorm(8, out_channels),
-            nn.BatchNorm2d(out_channels),
-            nn.LeakyReLU(inplace=True)
-        )
-
-    def forward(self, x):
-        x = self.cnn_block(x)
-        return x
-
-
-class MultiCNNBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, padding, n_conv):
-        super().__init__()
-        self.layers = nn.ModuleList()
-
-        for _ in range(n_conv):
-            self.layers.append(CNNBlock(in_channels, out_channels, padding=padding))
-            in_channels = out_channels
-
-    def forward(self, x):
-        for layer in self.layers:
-            x = layer(x)
-
-        return x
-
+from ._base import MultiCNNBlock, OutputBlock
 class DyConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, num_dy_conv=4, attn_temp=30):
         super().__init__()
@@ -109,10 +79,10 @@ class Encoder(nn.Module):
             if isinstance(layer, DyConvBlock) or isinstance(layer, MultiCNNBlock):
                 x = layer(x)
                 route_connection.append(x)
-                print('Conv', x.size())
+                # print('Conv', x.size())
             else:
                 x = layer(x)
-                print('Down sample', x.size())
+                # print('Down sample', x.size())
 
         return x, route_connection
     
@@ -125,13 +95,14 @@ class Decoder(nn.Module):
 
         for _ in range(size):
             # Use conv transpose for upsampling
+            # self.decoder_layers.append(nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True))
             self.decoder_layers.append(nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2))
-            self.decoder_layers.append(MultiCNNBlock(in_channels, out_channels, padding, n_conv=2))
+            self.decoder_layers.append(MultiCNNBlock(2*in_channels, out_channels, padding, n_conv=2))
             # in_channels //= 2
             # out_channels //= 2
 
         # Use normal conv to remove bn and activation function
-        self.decoder_layers.append(nn.Conv2d(in_channels, num_class, kernel_size=1))
+        self.decoder_layers.append(OutputBlock(out_channels, num_class))
         
 
     def forward(self, x, routes_connection):
@@ -145,10 +116,10 @@ class Decoder(nn.Module):
                 # concat channels
                 x = torch.cat([x, routes_connection.pop(-1)], dim=1)
                 x = layer(x)
-                print('Dec Conv', x.size())
+                # print('Dec Conv', x.size())
             else:
                 x = layer(x)
-                print('Up sample', x.size())
+                # print('Up sample', x.size())
 
         return x
     
@@ -165,14 +136,15 @@ class ThinDyUNet(nn.Module):
     def forward(self, x):
         enc_out, routes = self.encoder(x)
         out = self.decoder(enc_out, routes)
+        
         return out
 
 
 if __name__ == '__main__':
-    x = torch.randn(1, 3, 244, 244)
+    x = torch.randn(1, 3, 256, 256)
     model = ThinDyUNet(
         in_channels=3,
-        start_out_channels=32,
+        start_out_channels=64,
         num_class=1,
         size=6,
         padding=1,

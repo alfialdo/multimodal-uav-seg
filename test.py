@@ -28,6 +28,9 @@ if config.model.name == 'VanillaUNet':
 elif config.model.name == 'DyUNet':
     from model.DyUNet import DyUNet
     model = DyUNet(in_channels=3, start_out_channels=32, num_class=1, size=4, padding=1)
+elif config.model.name == 'ThinDyUNet':
+    from model.ThinDyUNet import ThinDyUNet
+    model = ThinDyUNet(in_channels=3, start_out_channels=64, num_class=1, size=6, padding=1)
 
 if args.model_path is None:
     model_path = f'{config.trainer.checkpoint.save_dir}/{config.model.name}-best-val.pth'

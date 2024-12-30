@@ -3,35 +3,7 @@ import torch.nn as nn
 from torchvision.transforms.functional import center_crop
 from torchinfo import summary
 
-class CNNBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0):
-        super(CNNBlock, self).__init__()
-
-        self.cnn_block = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
-        )
-
-    def forward(self, x):
-        x = self.cnn_block(x)
-        return x
-
-
-class MultiCNNBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, padding, n_conv):
-        super().__init__()
-        self.layers = nn.ModuleList()
-
-        for _ in range(n_conv):
-            self.layers.append(CNNBlock(in_channels, out_channels, padding=padding))
-            in_channels = out_channels
-
-    def forward(self, x):
-        for layer in self.layers:
-            x = layer(x)
-
-        return x
+from ._base import MultiCNNBlock
     
 
 class Encoder(nn.Module):

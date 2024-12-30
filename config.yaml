@@ -3,7 +3,7 @@ dataset:
   root_mask: /mnt/hdd/uav_dataset/Anti-UAV-RGBT-Masked-SAM2
   num_workers: 32
   batch_size: 32
-  image_size: [480,480]
+  image_size: [256,256]
   train_sequences: 70
   val_sequences: 20
   test_sequences: 20
@@ -13,7 +13,7 @@ trainer:
   optimizer: AdamW
   loss_fn: IoULoss
   lr: 0.0001
-  gpu_id: 1
+  gpu_id: 4
   scheduler:
     type: ReduceLROnPlateau
     factor: 0.15
@@ -24,7 +24,7 @@ trainer:
     min_delta: 0.001
     mode: min
   checkpoint: 
-    save_dir: checkpoints/DyUNet-AdamW-IoULoss-480
+    save_dir: checkpoints/ThinDyUNet-AdamW-IoULoss-b32
 
 model:
-  name: DyUNet
+  name: ThinDyUNet
