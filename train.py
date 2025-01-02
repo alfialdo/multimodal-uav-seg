@@ -30,7 +30,7 @@ train_dataloader, val_dataloader = get_dataloaders(dataset_cfg, transform)
 # Define the model
 if config.model.name == 'VanillaUNet':
     from model.UNet import VanillaUNet
-    model = VanillaUNet(in_channels=3, start_out_channels=32, num_class=1, size=4, padding=1)
+    model = VanillaUNet(in_channels=3, start_out_channels=64, num_class=1, size=4, padding=1)
 elif config.model.name == 'DyUNet':
     from model.DyUNet import DyUNet
     model = DyUNet(in_channels=3, start_out_channels=32, num_class=1, size=4, padding=1)

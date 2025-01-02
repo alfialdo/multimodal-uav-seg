@@ -24,7 +24,7 @@ test_loader = get_dataloaders(config.dataset, tsfm, test=True)
 
 if config.model.name == 'VanillaUNet':
     from model.UNet import VanillaUNet
-    model = VanillaUNet(in_channels=3, start_out_channels=32, num_class=1, size=4, padding=1)
+    model = VanillaUNet(in_channels=3, start_out_channels=64, num_class=1, size=4, padding=1)
 elif config.model.name == 'DyUNet':
     from model.DyUNet import DyUNet
     model = DyUNet(in_channels=3, start_out_channels=32, num_class=1, size=4, padding=1)
