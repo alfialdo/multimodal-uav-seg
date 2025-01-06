@@ -1,87 +1,85 @@
 import torch
 from torch import nn
 from typing import Type
+import einops
 
-class CreatePatchesLayer(nn.Module):
-  def __init__(
-    self,
-    patch_size: int,
-    strides: int,
-  ) -> None:
-    """Init Variables."""
-    super().__init__()
-    self.unfold_layer = nn.Unfold(
-      kernel_size=patch_size, stride=strides
-    )
+# class CreatePatchesLayer(nn.Module):
+#   def __init__(self,patch_size: int, strides: int) -> None:
+#     super().__init__()
+#     self.unfold_layer = nn.Unfold(
+#       kernel_size=patch_size, stride=strides
+#     )
 
-  def forward(self, images: torch.Tensor) -> torch.Tensor:
-    """Forward Pass to Create Patches."""
-    patched_images = self.unfold_layer(images)
-    return patched_images.permute((0, 2, 1))
+#   def forward(self, images: torch.Tensor) -> torch.Tensor:
+#     patched_images = self.unfold_layer(images)
+#     return patched_images.permute((0, 2, 1))
   
 
+# class PatchEmbeddingLayer(nn.Module):
+#   def __init__(self, num_patches: int, batch_size: int, patch_size: int, embed_dim: int, in_channels: int) -> None:
+#     super().__init__()
+#     self.num_patches = num_patches
+#     self.patch_size = patch_size
+#     self.batch_size = batch_size
+    
+#     self.position_emb = nn.Embedding(
+#       num_embeddings=num_patches, embedding_dim=embed_dim
+#     )
+#     self.projection_layer = nn.Linear(
+#       patch_size * patch_size * in_channels, embed_dim
+#     )
+
+#   def forward(self, patches: torch.Tensor) -> torch.Tensor:
+#     device = patches.device
+#     positions = (
+#       torch.arange(start=0, end=self.num_patches, step=1)
+#       .to(device)
+#       .unsqueeze(dim=0)
+#     )
+
+#     patches = self.projection_layer(patches)
+#     encoded_patches = patches + self.position_emb(positions)
+
+#     return encoded_patches
+  
 class PatchEmbeddingLayer(nn.Module):
-  def __init__(self, num_patches: int, batch_size: int, patch_size: int, embed_dim: int, device: torch.device) -> None:
-    """Init Function."""
-    
-    super().__init__()
-    self.num_patches = num_patches
-    self.patch_size = patch_size
-    self.batch_size = batch_size
-    
-    self.position_emb = nn.Embedding(
-      num_embeddings=num_patches, embedding_dim=embed_dim
-    )
-    self.projection_layer = nn.Linear(
-      patch_size * patch_size * 3, embed_dim
-    )
-    self.class_parameter = nn.Parameter(
-      torch.rand(batch_size, 1, embed_dim).to(device),
-      requires_grad=True,
-    )
-    self.device = device
+    def __init__(self, embed_dim: int, in_channels: int) -> None:
+        super().__init__()
+        self.projection_layer = nn.Linear(in_channels, embed_dim)
 
-  def forward(self, patches: torch.Tensor) -> torch.Tensor:
-    """Forward Pass."""
-    positions = (
-      torch.arange(start=0, end=self.num_patches + 1, step=1)
-      .to(self.device)
-      .unsqueeze(dim=0)
-    )
-    
-    patches = self.projection_layer(patches)
-    class_tokens = self.class_parameter.expand(self.batch_size, -1, -1)
-    encoded_patches = torch.cat(
-      (class_tokens, patches), dim=1
-    ) + self.position_emb(positions)
-    return encoded_patches
-  
+    def forward(self, feature_map: torch.Tensor) -> torch.Tensor:
+        # feature_map shape: (batch, in_channels, H, W)
+        batch_size, in_channels, H, W = feature_map.shape
+        
+        # Rearrange to (batch, H*W, in_channels)
+        patches = einops.rearrange(feature_map, 'b c h w -> b (h w) c')
+        
+        # Apply linear projection to each patch
+        embedded_patches = self.projection_layer(patches)
+        
+        return embedded_patches
 
-def create_mlp_block(
-    input_features: int,
-    output_features: list[int],
-    activation_function: Type[nn.Module],
-    dropout_rate: float,
-) -> nn.Module:
-    """Create a Feed Forward Network for the Transformer Layer."""
+
+def create_mlp_block(input_features: int, output_features: list[int], activation_function: Type[nn.Module], dropout_rate: float) -> nn.Module:
+    
     layer_list = []
-    for idx in range(  # pylint: disable=consider-using-enumerate
-        len(output_features)
-    ):
-        if idx == 0:
-            linear_layer = nn.Linear(
-                in_features=input_features, out_features=output_features[idx]
-            )
-        else:
-            linear_layer = nn.Linear(
-                in_features=output_features[idx - 1],
-                out_features=output_features[idx],
-            )
-        dropout = nn.Dropout(p=dropout_rate)
-        layers = nn.Sequential(
-            linear_layer, activation_function(), dropout
-        )
-        layer_list.append(layers)
+    for idx in range(len(output_features)):
+      
+      if idx == 0:
+          linear_layer = nn.Linear(
+              in_features=input_features, out_features=output_features[idx]
+          )
+      else:
+          linear_layer = nn.Linear(
+              in_features=output_features[idx - 1],
+              out_features=output_features[idx],
+          )
+      dropout = nn.Dropout(p=dropout_rate)
+      layers = nn.Sequential(
+          linear_layer, activation_function(), dropout
+      )
+      layer_list.append(layers)
+
     return nn.Sequential(*layer_list)
 
 
@@ -135,38 +133,38 @@ class TransformerBlock(nn.Module):
 class ViTBlock(nn.Module):
   """ViT Model for Image Classification."""
 
-  def __init__(self, patch_size, n_trans, device: torch.device, **kwargs) -> None:
+  def __init__(self, encoder_cfg, in_channels) -> None:
     """Init Function."""
     super().__init__()
-    self.create_patch_layer = CreatePatchesLayer(patch_size, patch_size)
-    self.patch_embedding_layer = PatchEmbeddingLayer(
-      kwargs['num_patches'], kwargs['batch_size'], patch_size, kwargs['projection_dim'], device
-    )
+    # self.create_patch_layer = CreatePatchesLayer(encoder_cfg['patch_size'], encoder_cfg['patch_size'])
+    # self.patch_embedding_layer = PatchEmbeddingLayer(
+    #   encoder_cfg['num_patches'], encoder_cfg['batch_size'], encoder_cfg['patch_size'], 
+    #   encoder_cfg['projection_dim'], in_channels
+    # )
+    self.patch_embedding_layer = PatchEmbeddingLayer(encoder_cfg['projection_dim'], in_channels)
     self.transformer_layers = nn.ModuleList()
 
-    for _ in range(n_trans):
+    for _ in range(encoder_cfg['n_trans']):
       self.transformer_layers.append(
         TransformerBlock(
-          kwargs['num_heads'], kwargs['projection_dim'], kwargs['projection_dim'], kwargs['feed_forward_dim']
+          encoder_cfg['num_heads'], encoder_cfg['projection_dim'], encoder_cfg['projection_dim'], encoder_cfg['feed_forward_dim']
         )
       )
 
     self.mlp_block = create_mlp_block(
-      input_features=kwargs['projection_dim'],
-      output_features=kwargs['mlp_head_units'],
+      input_features=encoder_cfg['projection_dim'],
+      output_features=encoder_cfg['mlp_head_units'],
       activation_function=nn.GELU,
         dropout_rate=0.5,
       )
 
   def forward(self, x: torch.Tensor) -> torch.Tensor:
     """Forward Pass."""
-    x = self.create_patch_layer(x)
+    # x = self.create_patch_layer(x)
     x = self.patch_embedding_layer(x)
     
     for transformer_layer in self.transformer_layers:
       x = transformer_layer(x)
-    
-
 
     return x
 

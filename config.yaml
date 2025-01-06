@@ -4,8 +4,8 @@ dataset:
   num_workers: 32
   batch_size: 32
   image_size:
-  - 512
-  - 512
+  - 256
+  - 256
   train_sequences: 70
   val_sequences: 20
   test_sequences: 20
@@ -27,4 +27,11 @@ trainer:
   checkpoint:
     save_dir: checkpoints/ThinDyUNet-AdamW-DiceLoss-512
 model:
-  name: ThinDyUNet
+  name: TransUNet
+  encoder:
+    patch_size: 16
+    n_transformer: 12
+    projection_dim:
+    mlp_head_units: [1024, 512]
+    # feed_forward_dim: proj_dim * 2
+
