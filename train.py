@@ -37,6 +37,21 @@ elif config.model.name == 'DyUNet':
 elif config.model.name == 'ThinDyUNet':
     from model.ThinDyUNet import ThinDyUNet
     model = ThinDyUNet(in_channels=3, start_out_channels=64, num_class=1, size=6, padding=1)
+elif config.model.name == 'TransUNet':
+    from model.TransUNet import TransUNet
+    enc_params = config.model.encoder
+    img_size = dataset_cfg.image_size[0]
+    size=3
+    encoder_cfg = dict(
+        patch_size=enc_params.patch_size,
+        n_trans=enc_params.n_transformer,
+        projection_dim=enc_params.projection_dim,
+        mlp_head_units=enc_params.mlp_head_units,
+        num_heads=enc_params.num_heads,
+    )
+    encoder_cfg['num_patches'] = ((img_size//(2**size)) // encoder_cfg['patch_size']) ** 2
+    encoder_cfg['feed_forward_dim'] = encoder_cfg['projection_dim'] * 2
+    model = TransUNet(in_channels=3, start_out_channels=64, num_class=1, size=3, padding=1, encoder_cfg=encoder_cfg)
 
 criterion = get_loss_function(trainer_cfg.loss_fn)
 optimizer = get_optimizer(trainer_cfg.optimizer, model, trainer_cfg.lr)

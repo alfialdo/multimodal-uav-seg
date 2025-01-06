@@ -14,7 +14,7 @@ trainer:
   optimizer: AdamW
   loss_fn: DiceLoss
   lr: 0.0001
-  gpu_id: 1
+  gpu_id: 0
   scheduler:
     type: ReduceLROnPlateau
     factor: 0.15
@@ -25,13 +25,12 @@ trainer:
     min_delta: 0.001
     mode: min
   checkpoint:
-    save_dir: checkpoints/ThinDyUNet-AdamW-DiceLoss-512
+    save_dir: checkpoints/TransUNet-AdamW-DiceLoss
 model:
   name: TransUNet
   encoder:
     patch_size: 16
     n_transformer: 12
-    projection_dim:
+    projection_dim: 32
     mlp_head_units: [1024, 512]
-    # feed_forward_dim: proj_dim * 2
-
+    num_heads: 4

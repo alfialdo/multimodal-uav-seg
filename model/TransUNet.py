@@ -61,7 +61,7 @@ class Decoder(nn.Module):
         return x
 
 class TransUNet(nn.Module):
-    def __init__(self, in_channels, start_out_channels, size, num_classes, padding, encoder_cfg):
+    def __init__(self, in_channels, start_out_channels, size, num_class, padding, encoder_cfg):
         super().__init__()
 
         enc_in_channels = start_out_channels*(2**(size-1))
@@ -70,7 +70,7 @@ class TransUNet(nn.Module):
         self.bottle_neck = CNNBlock(in_channels=encoder_cfg['projection_dim'], out_channels=enc_in_channels*2, padding=1)
         self.decoder = Decoder(
             start_out_channels*(2**size), start_out_channels*(2**(size-1)),
-            num_classes, padding=padding, size=size
+            num_class, padding=padding, size=size
         )
 
     def forward(self, x):
@@ -111,5 +111,4 @@ if __name__ == '__main__':
     encoder_cfg['feed_forward_dim'] = encoder_cfg['projection_dim'] * 2
 
     model = TransUNet(3, 64, size, num_classes=1, padding=1, encoder_cfg=encoder_cfg)
-    
-    summary(model, input_data=x, col_width=20, depth=5, row_settings=["depth", "var_names"], col_names=["input_size", "kernel_size", "output_size", "params_percent"]) 
+    summary(model, input_data=x, col_width=20, depth=5, row_settings=["depth", "var_names"], col_names=["input_size", "kernel_size", "output_size", "params_percent"])
