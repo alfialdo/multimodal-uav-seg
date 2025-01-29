@@ -46,6 +46,9 @@ elif config.model.name == 'TransUNet':
     encoder_cfg['num_patches'] = ((img_size//(2**size)) // encoder_cfg['patch_size']) ** 2
     encoder_cfg['feed_forward_dim'] = encoder_cfg['projection_dim'] * 2
     model = TransUNet(in_channels=3, start_out_channels=64, num_class=1, size=3, padding=1, encoder_cfg=encoder_cfg)
+elif config.model.name == 'MaskRCNN':
+    from model.MaskRCNN import MaskRCNN
+    model = MaskRCNN(num_class=1, n_hidden_layer=256).model
 
 if args.model_path is None:
     model_path = f'{config.trainer.checkpoint.save_dir}/{config.model.name}-best-val.pth'
