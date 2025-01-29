@@ -1,0 +1,13 @@
+[VanillaUNet-AdamW-IoULoss]
+Pixel Accuracy: 0.9958 |Mean IoU: 0.5085 | Dice Coeff: 0.5904 | Inference Time: 0.92 ms
+
+[DyUNet-AdamW-IoULoss-480]
+Pixel Accuracy: 0.9982 |Mean IoU: 0.6449 | Dice Coeff: 0.7214 | Inference Time: 2.30 ms
+
+[VanillaUNet64-AdamW-IoULoss]
+Pixel Accuracy: 0.9970 |Mean IoU: 0.4136 | Dice Coeff: 0.5091 | Inference Time: 1.01 ms     
+
+[ThinDyUNet-AdamW-DiceLoss-512]
+Pixel Accuracy: 0.9980 |Mean IoU: 0.6003 | Dice Coeff: 0.6812 | Inference Time: 2.09 ms
+
+
