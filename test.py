@@ -24,13 +24,28 @@ test_loader = get_dataloaders(config.dataset, tsfm, test=True)
 
 if config.model.name == 'VanillaUNet':
     from model.UNet import VanillaUNet
-    model = VanillaUNet(in_channels=3, start_out_channels=32, num_class=1, size=4, padding=1)
+    model = VanillaUNet(in_channels=3, start_out_channels=64, num_class=1, size=4, padding=1)
 elif config.model.name == 'DyUNet':
     from model.DyUNet import DyUNet
     model = DyUNet(in_channels=3, start_out_channels=32, num_class=1, size=4, padding=1)
 elif config.model.name == 'ThinDyUNet':
     from model.ThinDyUNet import ThinDyUNet
     model = ThinDyUNet(in_channels=3, start_out_channels=64, num_class=1, size=6, padding=1)
+elif config.model.name == 'TransUNet':
+    from model.TransUNet import TransUNet
+    enc_params = config.model.encoder
+    img_size = config.dataset.image_size[0]
+    size=3
+    encoder_cfg = dict(
+        patch_size=enc_params.patch_size,
+        n_trans=enc_params.n_transformer,
+        projection_dim=enc_params.projection_dim,
+        mlp_head_units=enc_params.mlp_head_units,
+        num_heads=enc_params.num_heads,
+    )
+    encoder_cfg['num_patches'] = ((img_size//(2**size)) // encoder_cfg['patch_size']) ** 2
+    encoder_cfg['feed_forward_dim'] = encoder_cfg['projection_dim'] * 2
+    model = TransUNet(in_channels=3, start_out_channels=64, num_class=1, size=3, padding=1, encoder_cfg=encoder_cfg)
 
 if args.model_path is None:
     model_path = f'{config.trainer.checkpoint.save_dir}/{config.model.name}-best-val.pth'
