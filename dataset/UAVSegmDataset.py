@@ -53,8 +53,8 @@ class UAVSegmDataset(Dataset):
             if num_sequences is not None and i >= num_sequences:
                 break
 
-        mask_lookup = set(['/'.join(x.split('/')[5:])[:-9] for x in mask_list])
-        image_list = [x for x in image_list if '/'.join(x.split('/')[5:])[:-4] in mask_lookup]
+        mask_lookup = set(['/'.join(x.split('/')[-4:])[:-9] for x in mask_list])
+        image_list = [x for x in image_list if '/'.join(x.split('/')[-4:])[:-4] in mask_lookup]
         
         assert len(image_list) == len(mask_list), 'Mismatch total images and masks in the dataset'
         return image_list, mask_list
