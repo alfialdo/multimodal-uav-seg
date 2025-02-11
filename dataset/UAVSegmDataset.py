@@ -22,18 +22,26 @@ class UAVSegmDataset(Dataset):
     
 
     def __getitem__(self, idx):
-        image = self.images[idx]
-        mask = self.masks[idx]
-        image = Image.open(image)
-        mask = Image.open(mask)
+        image_path = self.images[idx]
+        mask_path = self.masks[idx]
+        image = Image.open(image_path)
+        mask = Image.open(mask_path)
 
         if self.transforms:
             image = self.transforms(image)
             mask = self.transforms(mask)
+            mask = (mask > 0.0).float()
 
-            # assert mask.min() == 0.0 and mask.max() == 1.0, 'Invalid value of masks'
+            if self.__is_bad_mask(mask):
+                print(f'Invalid value of masks: {mask_path}')
+                return None
+
+            # assert len(mask.unique()) == 2, f'Invalid value of masks: {mask_path}'
 
         return image, mask
+
+    def __is_bad_mask(self, mask):
+        return len(mask.unique()) != 2
 
 
     def __get_file_path(self, root, root_mask, num_sequences):
@@ -53,8 +61,8 @@ class UAVSegmDataset(Dataset):
             if num_sequences is not None and i >= num_sequences:
                 break
 
-        mask_lookup = set(['/'.join(x.split('/')[5:])[:-9] for x in mask_list])
-        image_list = [x for x in image_list if '/'.join(x.split('/')[5:])[:-4] in mask_lookup]
+        mask_lookup = set(['/'.join(x.split('/')[-4:])[:-9] for x in mask_list])
+        image_list = [x for x in image_list if '/'.join(x.split('/')[-4:])[:-4] in mask_lookup]
         
         assert len(image_list) == len(mask_list), 'Mismatch total images and masks in the dataset'
         return image_list, mask_list

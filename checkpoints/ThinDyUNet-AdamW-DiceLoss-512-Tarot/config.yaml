@@ -25,6 +25,6 @@ trainer:
     min_delta: 0.001
     mode: min
   checkpoint:
-    save_dir: checkpoints/ThinDyUNet-AdamW-DiceLoss-512-Tarot-MaskFix
+    save_dir: checkpoints/ThinDyUNet-AdamW-DiceLoss-512-Tarot
 model:
   name: ThinDyUNet
