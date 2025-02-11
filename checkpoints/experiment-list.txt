@@ -10,4 +10,7 @@ Pixel Accuracy: 0.9970 |Mean IoU: 0.4136 | Dice Coeff: 0.5091 | Inference Time: 
 [ThinDyUNet-AdamW-DiceLoss-512]
 Pixel Accuracy: 0.9980 |Mean IoU: 0.6003 | Dice Coeff: 0.6812 | Inference Time: 2.09 ms
 
+[ThinDyUNet-AdamW-DiceLoss-512-Tarot-MaskFix]
+Pixel Accuracy: 0.9994 |Mean IoU: 0.9028 | Dice Coeff: 0.9445 | Inference Time: 4.94 ms
+
 
