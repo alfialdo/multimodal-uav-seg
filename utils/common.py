@@ -40,7 +40,7 @@ def get_dataloaders(config, tsfm, test=False):
         )
         print('Test dataset size:', len(test_dataset))
 
-        test_dataloader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False, num_workers=config.num_workers)
+        test_dataloader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False, num_workers=config.num_workers, collate_fn=custom_collate_fn)
 
         return test_dataloader
 
@@ -61,8 +61,8 @@ def get_dataloaders(config, tsfm, test=False):
     print('Val dataset size:', len(val_dataset))
 
     # Create dataloaders
-    train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, num_workers=config.num_workers)
-    val_dataloader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=config.num_workers)
+    train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, num_workers=config.num_workers, collate_fn=custom_collate_fn)
+    val_dataloader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=config.num_workers, collate_fn=custom_collate_fn)
 
     # Iterate over the train dataloader
     for images, masks in train_dataloader:
@@ -112,3 +112,12 @@ def dice_coeff(pred_mask, true_mask):
     intersection = (pred_mask & true_mask).float().sum((1, 2, 3))
     dice = (2. * intersection + 1e-6) / (pred_mask.float().sum((1, 2, 3)) + true_mask.float().sum((1, 2, 3)) + 1e-6)
     return dice.mean().item()
+
+def custom_collate_fn(batch):
+    batch = list(filter(lambda x: x is not None, batch))
+    
+    if len(batch) == 0:
+        return None, None
+    
+    data, masks = zip(*batch)
+    return torch.stack(data), torch.stack(masks)
